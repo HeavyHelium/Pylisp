@@ -3,7 +3,7 @@ import operator as op
 from lsp_parser import *
 
 def standard_environment() -> Env:
-    env = Env() # a dict
+    env = Environment() # a dict
     env.update(vars(math)) 
     env.update({
         "+": op.add, "-": op.sub, "*": op.mul,
@@ -33,18 +33,49 @@ def standard_environment() -> Env:
     })
     return env
 
+class Environment(dict):
+    """An environment: a dict of {'var': val} pairs, with an outer Env."""
+    def __init__(self, params=(), args=(), outer=None):
+        self.update(zip(params, args))
+        self.outer = outer
+
+    def find(self, var):
+        """Find the innermost Env where var appears.
+            :param var: the variable to find
+            :return: the environment where var is found
+            """
+        if var in self: 
+            return self
+        elif self.outer:  
+            return self.outer.find(var)
+        else:
+            raise NameError(f"unbound variable: {var}")
+class Procedure:
+    """A user-defined procedure."""
+    def __init__(self, params, body, env):
+        self.params, self.body, self.env = params, body, env
+
+    def __call__(self, *args):
+        """Make the procedure callable."""
+        return eval(self.body, Environment(self.params, args, self.env))
+
+
 global_env = standard_environment()
 
-def eval(x: Expression, env: Env = global_env) -> Expression:
+def eval(x: Expression, env=global_env):
     """Evaluate an expression in an environment.
         :param x: the expression to evaluate
         :param env: the environment to evaluate in
         :return: the result of the evaluation
     """
     if isinstance(x, Symbol): # a variable reference
-        return env[x]
+        return env.find(x)[x]
     elif isinstance(x, int) or isinstance(x, float): # then it's a constant
         return x # simply return it, it evaluates to itself
+    op, *args = x
+    if op == "quote": # quotation
+        (_, expr) = x
+        return expr # suppress evaluation
     elif x[0] == "if": # conditional
         (_, test, consequence, alternative) = x 
         expr = consequence if eval(test, env) else alternative
@@ -52,6 +83,9 @@ def eval(x: Expression, env: Env = global_env) -> Expression:
     elif x[0] == "define": # definition
         (_, symbol, expr) = x
         env[symbol] = eval(expr, env)
+    elif x[0] == "lambda": # assignment
+        (_, params, body) = x
+        return Procedure(params, body, env)
     else: 
         # procedure call
         proc = eval(x[0], env)

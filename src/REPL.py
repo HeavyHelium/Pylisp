@@ -11,10 +11,15 @@ def repl():
         line = input('>>> ')
         if line == BREAK_MSG:
             break
-        
+
         if line.isspace() or line == '':
             continue
-        val = eval(Parser(tokenize(line)).parse(), env)
+        val = None
+        try: 
+            val = eval(Parser(tokenize(line)).parse(), env)
+        except Exception as e:
+            print(e)
+            
         if val is not None:
             print(stringify(val))
 
