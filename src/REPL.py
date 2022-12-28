@@ -1,33 +1,33 @@
-from evironment import * 
+from evironment import *
+import lsp_parser
 
-BREAK_MSG = "quit()"
+class Interpreter:
+    BREAK_MSG = "quit()"
+    
+    def __init__(self) -> None:
+        self.global_env = Environment.standard_environment()
 
-def repl():
-    """
-        Read-Eval-Print-Loop
-    """
-    env = standard_environment()
-    while True:
-        line = input('>>> ')
-        if line == BREAK_MSG:
-            break
+    def eval(self, x: Expression): 
+        return eval(x, self.global_env)
 
-        if line.isspace() or line == '':
-            continue
-        val = None
-        try: 
-            val = eval(Parser(tokenize(line)).parse(), env)
-        except Exception as e:
-            print(e)
-            
-        if val is not None:
-            print(stringify(val))
+    def repl(self) -> None:
+        while True:
+            line = input('>>> ')
 
-def stringify(expr): 
-    if isinstance(expr, list):
-        return '(' + ' '.join(map(stringify, expr)) + ')'
-    return str(expr)
+            if line == Interpreter.BREAK_MSG:
+                break
+
+            if line.isspace() or line == '':
+                continue
+            val = None
+            try: 
+                val = self.eval(Parser(tokenize(line)).parse())
+            except Exception as e:
+                print(e)
+                
+            if val is not None:
+                print(lsp_parser.stringify(val))
 
 
 if __name__ == "__main__":
-    repl()
+    Interpreter().repl()

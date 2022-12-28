@@ -18,6 +18,11 @@ def tokenize(text: str) -> list[str]:
     """
     return text.replace("(", " ( ").replace(")", " ) ").split()
 
+def stringify(expr): 
+    if isinstance(expr, list):
+        return '(' + ' '.join(map(stringify, expr)) + ')'
+    return str(expr)
+
 
 class Parser: 
 
@@ -65,12 +70,9 @@ class Parser:
             raise SyntaxError("unexpected closing parenthesis")
         else: 
             return Parser.atom(tokens[idx]), 1
-
-
  
 
 if __name__ == "__main__":
-
     test_program = "(area_circle (define r 10) (* pi (* r r)))"
     assert Parser(tokenize(test_program)).parse() == \
            (['area_circle', ['define', 'r', 10], ['*', 'pi', ['*', 'r', 'r']]], 17)
